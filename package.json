@@ -10,24 +10,28 @@
     "build": "tsc --noEmit && tsc -p tsconfig.server.json && vite build",
     "start": "cross-env NODE_ENV=production node dist/server/index.js",
     "test": "tsx --test server/**/*.test.ts",
+    "db:migrate-local": "tsx server/migrate-local.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "better-sqlite3": "^12.2.0",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.3",
     "@types/node": "^22.15.30",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
+    "better-sqlite3": "^12.2.0",
     "tsx": "^4.19.2",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
