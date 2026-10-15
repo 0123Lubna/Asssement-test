@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Heart, Search, ShieldCheck, Sparkles, UserRound, X } from 'lucide-react';
+import './booking-progress.css';
 
 type Provider = { id: number; name: string; specialty: string };
 type Appointment = { id: string; providerId: number; providerName: string; customerName: string; customerEmail: string; date: string; startTime: string; endTime: string; status: 'BOOKED' | 'CANCELLED'; createdAt: string };
@@ -21,6 +22,18 @@ function prettyDate(date: string, options: Intl.DateTimeFormatOptions = { weekda
 function prettyTime(time: string) {
   const [h, m] = time.split(':').map(Number);
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+}
+
+function BookingProgress({ currentStep }: { currentStep: 1 | 2 }) {
+  return <div className="booking-progress" role="group" aria-label={`Booking progress: step ${currentStep} of 2, ${currentStep === 1 ? 'Choose visit' : 'Confirmation'}`}>
+    <div className={`booking-progress-step ${currentStep === 1 ? 'current' : 'complete'}`} aria-current={currentStep === 1 ? 'step' : undefined}>
+      <span className="booking-progress-number">01</span><span className="booking-progress-label">Choose visit</span>
+    </div>
+    <span className={`booking-progress-line ${currentStep === 2 ? 'complete' : ''}`} aria-hidden="true" />
+    <div className={`booking-progress-step ${currentStep === 2 ? 'current' : 'upcoming'}`} aria-current={currentStep === 2 ? 'step' : undefined}>
+      <span className="booking-progress-number">02</span><span className="booking-progress-label">Confirmation</span>
+    </div>
+  </div>;
 }
 
 export default function App() {
@@ -143,6 +156,7 @@ export default function App() {
 
       {tab === 'book' ? <>
         {created ? <section className="confirmation-card">
+          <BookingProgress currentStep={2} />
           <button className="back-link" onClick={() => { setCreated(null); setNotice(''); }}><ChevronLeft size={16} /> Book another visit</button>
           <div className="confirm-icon"><Check size={29} /></div>
           <div className="eyebrow">YOU’RE ALL SET</div><h2>Your visit is confirmed.</h2>
@@ -156,7 +170,7 @@ export default function App() {
           <button className="primary-btn full-btn" onClick={() => { setTab('manage'); setCreated(null); setNotice(''); }}>View appointments <ArrowRight size={17} /></button>
         </section> : <section className="booking-layout">
           <div className="booking-main">
-            <div className="section-heading"><div><div className="eyebrow">LET’S GET YOU BOOKED</div><h2>Choose your visit</h2></div><span className="step-count">01 <i /> 02</span></div>
+            <div className="section-heading"><div><div className="eyebrow">LET’S GET YOU BOOKED</div><h2>Choose your visit</h2></div><BookingProgress currentStep={1} /></div>
             <div className="field-label">Choose a specialist</div>
             <div className="provider-grid">
               {providers.map((provider, index) => <button key={provider.id} className={`provider-card ${providerId === provider.id ? 'selected' : ''}`} onClick={() => setProviderId(provider.id)}>
