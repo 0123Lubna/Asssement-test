@@ -16,6 +16,14 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
 function todayIST() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
+function isTakingAppointmentsNow() {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+  const weekday = parts.find((part) => part.type === 'weekday')?.value;
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+  const minutesToday = hour * 60 + minute;
+  return weekday !== 'Sun' && minutesToday >= 10 * 60 && minutesToday < 18 * 60;
+}
 function prettyDate(date: string, options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) {
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', options);
 }
@@ -56,6 +64,13 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [takingAppointments, setTakingAppointments] = useState(isTakingAppointmentsNow);
+
+  useEffect(() => {
+    const updateScheduleStatus = () => setTakingAppointments(isTakingAppointmentsNow());
+    const interval = window.setInterval(updateScheduleStatus, 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const loadProviders = useCallback(async () => {
     setLoading(true);
@@ -124,6 +139,17 @@ export default function App() {
     catch (err) { setLookupError(err instanceof Error ? err.message : 'Booking not found.'); }
   }
 
+  function goToBooking(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    setError(''); setNotice(''); setCreated(null);
+    if (tab !== 'book' || created) {
+      setTab('book');
+      window.setTimeout(() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      return;
+    }
+    document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return <div className="app-shell">
     <header className="topbar">
       <a className="brand" href="#" onClick={(event) => { event.preventDefault(); setTab('book'); }}>
@@ -133,7 +159,10 @@ export default function App() {
         <button className={tab === 'book' ? 'nav-tab active' : 'nav-tab'} onClick={() => { setTab('book'); setCreated(null); setNotice(''); setError(''); }}>Book a visit</button>
         <button className={tab === 'manage' ? 'nav-tab active' : 'nav-tab'} onClick={() => { setTab('manage'); setNotice(''); setError(''); }}>Appointments</button>
       </nav>
-      <div className="topbar-note"><span className="status-dot" />Taking appointments</div>
+      <div className="topbar-note" role="status" aria-live="polite">
+        <span className={`status-dot ${takingAppointments ? '' : 'closed'}`} />
+        {takingAppointments ? 'Taking appointments' : 'Appointments available Mon–Sat, 10 AM–6 PM IST'}
+      </div>
     </header>
 
     <main>
@@ -144,10 +173,14 @@ export default function App() {
           <p>{tab === 'book' ? 'Meet with a trusted specialist. Choose a time that works for you, and we’ll take care of the rest.' : 'Keep track of upcoming visits, or find a booking with your confirmation ID.'}</p>
           <div className="hero-trust"><span><ShieldCheck size={16} /> Secure & simple</span><span><Clock3 size={16} /> 30-minute visits</span></div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="art-sun" /><div className="art-leaf leaf-one" /><div className="art-leaf leaf-two" /><div className="art-stem" />
-          <div className="art-card"><span className="art-card-icon"><Heart size={18} fill="currentColor" /></span><span><b>Make space for you</b><small>Your next step starts here</small></span><ArrowRight size={16} /></div>
-          <span className="art-spark spark-a">✳</span><span className="art-spark spark-b">✦</span>
+        <div className="hero-art">
+          <div className="hero-illustration" aria-hidden="true">
+            <div className="art-sun" /><div className="art-leaf leaf-one" /><div className="art-leaf leaf-two" /><div className="art-stem" />
+            <span className="art-spark spark-a">✳</span><span className="art-spark spark-b">✦</span>
+          </div>
+          <a className="art-card" href="#booking" onClick={goToBooking} aria-label="Book your visit. Choose a specialist and a time that works for you.">
+            <span className="art-card-icon"><Heart size={18} fill="currentColor" /></span><span><b>Book your visit</b><small>Choose a specialist and time</small></span><ArrowRight size={16} />
+          </a>
         </div>
       </section>
 
@@ -168,7 +201,7 @@ export default function App() {
             <div><span>VISIT FOR</span><strong>{created.customerName}</strong></div>
           </div>
           <button className="primary-btn full-btn" onClick={() => { setTab('manage'); setCreated(null); setNotice(''); }}>View appointments <ArrowRight size={17} /></button>
-        </section> : <section className="booking-layout">
+        </section> : <section id="booking" className="booking-layout">
           <div className="booking-main">
             <div className="section-heading"><div><div className="eyebrow">LET’S GET YOU BOOKED</div><h2>Choose your visit</h2></div><BookingProgress currentStep={1} /></div>
             <div className="field-label">Choose a specialist</div>
