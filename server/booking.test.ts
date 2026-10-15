@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import { initializeDatabase, listAppointments, type Queryable } from './db.js';
-import { bookAppointment, BookingError, cancelAppointment, getAvailableSlots } from './booking.js';
+import { bookAppointment, BookingError, cancelAppointment, getAvailableSlots, type BookingInput } from './booking.js';
 
 type TestDatabase = Queryable & { close: () => void };
 
@@ -25,7 +25,7 @@ async function createTestDatabase(): Promise<TestDatabase> {
 }
 
 const futureWeekday = '2099-01-05';
-const input = (overrides: Partial<Parameters<typeof bookAppointment>[1]> = {}) => ({
+const input = (overrides: Partial<BookingInput> = {}) => ({
   providerId: 1, customerName: 'Sam Taylor', customerEmail: 'sam@example.com', date: futureWeekday, startTime: '10:00', ...overrides,
 });
 const now = new Date('2026-10-15T04:00:00.000Z');
@@ -38,6 +38,13 @@ test('books and persists an available appointment', async () => {
     assert.equal(booking.endTime, '10:30');
     assert.equal((await listAppointments(db)).length, 1);
     assert.ok(!(await getAvailableSlots(db, 1, futureWeekday, now)).includes('10:00'));
+  } finally { db.close(); }
+});
+
+test('returns a validation error when the booking body is missing', async () => {
+  const db = await createTestDatabase();
+  try {
+    await assert.rejects(() => bookAppointment(db, undefined, now), (error) => error instanceof BookingError && error.statusCode === 400);
   } finally { db.close(); }
 });
 

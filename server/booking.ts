@@ -45,8 +45,8 @@ export async function getAvailableSlots(db: Queryable, providerId: number, date:
   return slots;
 }
 
-export async function bookAppointment(db: Queryable, input: BookingInput, now = new Date()): Promise<Appointment> {
-  const { providerId, customerName, customerEmail, date, startTime } = input;
+export async function bookAppointment(db: Queryable, input: BookingInput | null | undefined, now = new Date()): Promise<Appointment> {
+  const { providerId, customerName, customerEmail, date, startTime } = input ?? {} as BookingInput;
   if (!Number.isInteger(providerId) || !customerName || !customerEmail || !date || !startTime) {
     throw new BookingError(400, 'Provider, customer name, email, date, and time are required.');
   }
