@@ -60,6 +60,7 @@ export default function App() {
   const [created, setCreated] = useState<Appointment | null>(null);
   const [lookupId, setLookupId] = useState('');
   const [lookup, setLookup] = useState<Appointment | null>(null);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [lookupError, setLookupError] = useState('');
   const [loading, setLoading] = useState(true);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
@@ -121,8 +122,14 @@ export default function App() {
     } finally { setBusy(false); }
   }
 
-  async function cancel(id: string) {
+  function cancel(appointment: Appointment) {
     if (busy) return;
+    setAppointmentToCancel(appointment);
+  }
+
+  async function confirmCancellation() {
+    if (busy || !appointmentToCancel) return;
+    const id = appointmentToCancel.id;
     setBusy(true); setError(''); setNotice('');
     try {
       const updated = await api<Appointment>(`/api/appointments/${id}/cancel`, { method: 'POST' });
@@ -130,7 +137,7 @@ export default function App() {
       setLookup(updated);
       await Promise.all([refreshAppointments(), refreshSlots()]);
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not cancel the appointment.'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setAppointmentToCancel(null); }
   }
 
   async function findBooking(event: React.FormEvent) {
@@ -247,15 +254,26 @@ export default function App() {
         {appointmentsLoading ? <div className="empty-slots"><Clock3 size={19} /><span>Loading appointments…</span></div> : appointments.length ? <div className="appointment-list">{appointments.map((appointment) => <AppointmentRow key={appointment.id} appointment={appointment} busy={busy} onCancel={cancel} />)}</div> : <div className="empty-appointments"><span className="empty-calendar"><CalendarDays size={23} /></span><h3>No appointments yet</h3><p>Once you book a visit, it’ll show up here.</p><button className="primary-btn" onClick={() => setTab('book')}>Book your first visit <ArrowRight size={16} /></button></div>}
       </section>}
     </main>
+    {appointmentToCancel && <div className="cancel-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setAppointmentToCancel(null); }} onKeyDown={(event) => { if (event.key === 'Escape' && !busy) setAppointmentToCancel(null); }}>
+      <section className="cancel-modal" role="alertdialog" aria-modal="true" aria-labelledby="cancel-dialog-title" aria-describedby="cancel-dialog-description">
+        <button type="button" className="cancel-modal-icon" aria-label="Close cancellation confirmation" disabled={busy} onClick={() => setAppointmentToCancel(null)}><X size={19} /></button>
+        <h2 id="cancel-dialog-title">Cancel this appointment?</h2>
+        <p id="cancel-dialog-description">{appointmentToCancel.providerName} · {prettyDate(appointmentToCancel.date, { weekday: 'short', month: 'short', day: 'numeric' })} at {prettyTime(appointmentToCancel.startTime)}. Cancelling will make this time available again.</p>
+        <div className="cancel-modal-actions">
+          <button className="secondary-btn" autoFocus disabled={busy} onClick={() => setAppointmentToCancel(null)}>Keep appointment</button>
+          <button className="cancel-confirm-btn" disabled={busy} onClick={() => void confirmCancellation()}>{busy ? 'Cancelling…' : 'Yes, cancel appointment'}</button>
+        </div>
+      </section>
+    </div>}
     <footer className="footer"><a className="brand footer-brand" href="#"><span className="brand-mark"><Heart size={15} fill="currentColor" /></span><span>goodwell<span className="brand-dot">.</span></span></a><span>Take good care of you. <i /> Mon–Sat, 10 AM–6 PM IST</span></footer>
   </div>;
 }
 
-function AppointmentRow({ appointment, busy, onCancel, compact = false }: { appointment: Appointment; busy: boolean; onCancel: (id: string) => void; compact?: boolean }) {
+function AppointmentRow({ appointment, busy, onCancel, compact = false }: { appointment: Appointment; busy: boolean; onCancel: (appointment: Appointment) => void; compact?: boolean }) {
   return <article className={`appointment-row ${compact ? 'compact-row' : ''}`}>
     <div className="appointment-date"><strong>{prettyDate(appointment.date, { month: 'short', day: 'numeric' }).replace(',', '')}</strong><span>{prettyDate(appointment.date, { weekday: 'short' })}</span></div>
     <div className="appointment-info"><strong>{appointment.providerName}</strong><span>{prettyTime(appointment.startTime)} – {prettyTime(appointment.endTime)} <i /> {appointment.customerName}</span><small>{appointment.customerEmail}</small><small className="id-label">ID · {appointment.id}</small></div>
-    <div className="appointment-actions"><span className={`status-pill ${appointment.status === 'BOOKED' ? 'booked' : 'cancelled'}`}><span />{appointment.status === 'BOOKED' ? 'Confirmed' : 'Cancelled'}</span>{appointment.status === 'BOOKED' && <button className="cancel-btn" disabled={busy} onClick={() => onCancel(appointment.id)}>Cancel visit</button>}</div>
+    <div className="appointment-actions"><span className={`status-pill ${appointment.status === 'BOOKED' ? 'booked' : 'cancelled'}`}><span />{appointment.status === 'BOOKED' ? 'Confirmed' : 'Cancelled'}</span>{appointment.status === 'BOOKED' && <button className="cancel-btn" disabled={busy} onClick={() => onCancel(appointment)}>Cancel visit</button>}</div>
   </article>;
 }
 

@@ -8,3 +8,15 @@
 .art-card:hover{background:#fff;box-shadow:0 15px 32px #364f3722}
 .art-card:focus-visible{outline:3px solid #5e8a6e;outline-offset:4px}
 .status-dot.closed{background:#c99a44;box-shadow:0 0 0 3px #f5eddd}
+.cancel-modal-backdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#1d292280}
+.cancel-modal{width:min(100%,420px);padding:26px;border:1px solid #e7e8e3;border-radius:16px;background:#fff;box-shadow:0 22px 70px #17231f40}
+.cancel-modal-icon{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:12px;color:#a85c54;background:#f9ece9;cursor:pointer}
+.cancel-modal-icon:hover:not(:disabled){background:#f4dfdc}
+.cancel-modal-icon:focus-visible{outline:3px solid #a85c54;outline-offset:3px}
+.cancel-modal h2{margin:16px 0 8px;color:#2d3c32;font:500 23px 'Playfair Display',serif}
+.cancel-modal p{margin:0;color:#77837c;font-size:12px;line-height:1.65}
+.cancel-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:23px}
+.cancel-confirm-btn{min-height:38px;padding:0 13px;border:0;border-radius:8px;color:#fff;background:#a85c54;font-size:10px;font-weight:700}
+.cancel-confirm-btn:hover:not(:disabled){background:#914a43}
+.cancel-modal-actions .secondary-btn{min-height:38px}
+@media(max-width:480px){.cancel-modal-actions{flex-direction:column-reverse}.cancel-modal-actions button{min-height:42px;width:100%}}
