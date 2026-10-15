@@ -46,6 +46,10 @@ npm start
 
 Open <http://localhost:4000>.
 
+## Deploy to Vercel
+
+The root `server.ts` exports the Express application for Vercel Functions. `npm run build` writes the Vite frontend into `public/`, which Vercel serves as static assets. Import this GitHub repository into Vercel and use the Express framework preset with `npm run build` as the build command. Add `DATABASE_URL` in the Vercel project's Environment Variables for Production (and Preview if you want preview deployments to use Neon). Use the pooled Neon connection string and keep it server-side; do not add the `VITE_` prefix. Deploy or redeploy after saving the variable. Because this assessment intentionally has no authentication, deploy with demo-only appointment data: the management API lists appointments and allows cancellation by booking ID.
+
 ## Import existing local bookings
 
 The app now reads and writes to PostgreSQL. To copy records from the previous local SQLite database into the configured PostgreSQL database, set `DATABASE_PATH` in `.env` if the SQLite file is in a different location, then run:
@@ -68,7 +72,9 @@ Tests cover successful booking, concurrent and duplicate slot rejection, invalid
 ## Architecture
 
 - `src/ui`: React booking form, slot picker, confirmation, booking lookup, and appointment management UI.
-- `server/index.ts`: Express JSON API and HTTP error responses.
+- `server.ts`: Vercel entry point for the Express application.
+- `server/app.ts`: Express API routes, database initialization, and HTTP error responses.
+- `server/index.ts`: Local production server and static-file hosting.
 - `server/booking.ts`: slot generation and booking/cancellation rules, with IST-aware past-time checks.
 - `server/db.ts`: PostgreSQL schema, provider seed data, query pool, and query helpers.
 - `server/booking.test.ts`: automated business logic tests.
@@ -85,4 +91,5 @@ Codex was used to translate the assessment requirements into an implementation p
 - Provider configuration is intentionally fixed to the two seeded providers; there is no provider administration.
 - Authentication, email reminders, payments, custom hours, and rescheduling are out of scope.
 - Booking IDs are unguessable UUIDs, but lookup and cancellation have no authentication, as allowed by the assessment.
+- Do not use this unauthenticated assessment build with real customer data on a public deployment.
 - The Neon free plan has resource limits and may pause compute while idle; the first request after inactivity can take longer. Check the provider's current plan limits before using it beyond the assessment.
